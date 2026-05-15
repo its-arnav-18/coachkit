@@ -1,0 +1,28 @@
+from sqlalchemy.orm import Session
+from argon2 import PasswordHasher
+from app.models.user import User
+from app.schemas.user import UserCreate
+
+ph = PasswordHasher()
+
+def hash_password(password: str) -> str:
+    return ph.hash(password)
+
+def get_user_by_email(db: Session, email: str):
+    return db.query(User).filter(User.email == email).first()
+
+def create_user(db: Session, user: UserCreate):
+    existing_user = get_user_by_email(db, user.email)
+    if existing_user:
+        return None
+    hashed = hash_password(user.password)
+    db_user = User(
+        name=user.name,
+        email=user.email,
+        password_hash=hashed,
+        role=user.role
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
