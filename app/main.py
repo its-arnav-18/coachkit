@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from app.core.config import APP_NAME, APP_VERSION
+from app.core.database import engine, Base
+from app.models import user
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=APP_NAME,
