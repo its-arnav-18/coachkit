@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from argon2 import PasswordHasher
+from argon2 import PasswordHasher, exceptions
 from app.models.user import User
 from app.schemas.user import UserCreate
 
@@ -26,3 +26,10 @@ def create_user(db: Session, user: UserCreate):
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return ph.verify(hashed_password, plain_password)
+    except exceptions.VerifyMismatchError:
+        return False
+    
