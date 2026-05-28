@@ -3,6 +3,8 @@ from jose import JWTError, jwt
 from app.core.config import SECRET_KEY
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from app.core.database import get_db
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -35,3 +37,20 @@ def get_current_user_email(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"}
         )
     return email
+
+def require_role(required_role: str):
+    def role_checker(
+        current_user_email: str = Depends(get_current_user_email),
+        db: Session = Depends(get_db)
+    ):
+        from app.services.user_service import get_user_by_email
+        user = get_user_by_email(db, current_user_email)
+        if user.role != required_role:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied. {required_role} role required."
+            )
+        return user
+    return role_checker
+
+

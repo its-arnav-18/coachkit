@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
 from app.services.user_service import create_user, get_user_by_email, verify_password
-from app.core.security import create_access_token , get_current_user_email
+from app.core.security import create_access_token, get_current_user_email, require_role
 
 router = APIRouter()
 
@@ -36,3 +36,10 @@ def get_my_profile(
     return user
 
 
+@router.get("/students", response_model=list[UserResponse])
+def get_all_students(
+    current_user = Depends(require_role("teacher")),
+    db: Session = Depends(get_db)
+):
+    from app.services.user_service import get_all_students as get_students
+    return get_students(db)

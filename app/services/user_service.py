@@ -33,3 +33,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except exceptions.VerifyMismatchError:
         return False
     
+def get_all_students(db: Session):
+    return db.query(User).filter(User.role == "student").all()
+
