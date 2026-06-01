@@ -4,7 +4,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user_email, require_role
 from app.models.subject import Subject, Topic
 from app.models.question import Question
-from app.schemas.quiz import SubjectCreate, SubjectResponse, TopicCreate, TopicResponse, QuestionCreate, QuestionResponse
+from app.schemas.quiz import QuestionForQuiz, SubjectCreate, SubjectResponse, TopicCreate, TopicResponse, QuestionCreate, QuestionResponse, AnswerSubmit, QuizSubmit
 from typing import List
 
 router = APIRouter()
@@ -67,3 +67,50 @@ def create_question(
     db.commit()
     db.refresh(db_question)
     return db_question
+
+@router.get("/topics/{topic_id}/questions", response_model=list[QuestionForQuiz])
+def get_quiz_questions(
+    topic_id: int,
+    current_user = Depends(get_current_user_email),
+    db: Session = Depends(get_db)
+):
+    questions = db.query(Question).filter(Question.topic_id == topic_id).all()
+    if not questions:
+        raise HTTPException(status_code=404, detail="No questions found for this topic")
+    return questions
+
+# ============ SUBMIT QUIZ ============
+
+@router.post("/submit-quiz")
+def submit_quiz(
+    quiz_data: QuizSubmit,
+    current_user_email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db)
+):
+    from app.models.question import Question
+    from app.models.user import User
+    from app.models.quiz import QuizAttempt
+    
+    user = db.query(User).filter(User.email == current_user_email).first()
+    
+    score = 0
+    total = len(quiz_data.answers)
+    
+    for answer in quiz_data.answers:
+        question = db.query(Question).filter(Question.id == answer.question_id).first()
+        if question and question.correct_option == answer.selected_option:
+            score += 1
+    
+    percentage = (score / total * 100) if total > 0 else 0
+    
+    attempt = QuizAttempt(
+        user_id=user.id,
+        topic_id=quiz_data.topic_id,
+        score=score,
+        total_questions=total,
+        percentage=percentage
+    )
+    db.add(attempt)
+    db.commit()
+    
+    return {"score": score, "total": total, "percentage": round(percentage, 2)}

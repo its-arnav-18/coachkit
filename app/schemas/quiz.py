@@ -49,3 +49,24 @@ class QuestionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class QuestionForQuiz(BaseModel):
+    id: int
+    topic_id: int
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    difficulty_level: int
+
+    class Config:
+        from_attributes = True
+
+class AnswerSubmit(BaseModel):
+    question_id: int
+    selected_option: str
+
+class QuizSubmit(BaseModel):
+    topic_id: int
+    answers: list[AnswerSubmit]
