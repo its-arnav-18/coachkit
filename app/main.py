@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.core.config import APP_NAME, APP_VERSION
 from app.core.database import engine, Base
 from app.models import user, subject, question
-from app.api import users
+from app.api import users, quiz
 
 Base.metadata.create_all(bind=engine)
 
@@ -11,7 +11,9 @@ app = FastAPI(
     description="AI-powered coaching center management platform",
     version=APP_VERSION
 )
+
 app.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(quiz.router, prefix="/quiz", tags=["Quiz"])
 
 @app.get("/")
 def home():
